@@ -7,46 +7,98 @@
 
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f9;
-      text-align: center;
       margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1a2a6c, #fdbb2d);
+      color: #333;
     }
 
     header {
-      background: #1a2a6c;
-      color: white;
       padding: 20px;
-      font-size: 20px;
+      text-align: center;
+      color: white;
+      font-size: 22px;
       font-weight: bold;
+      letter-spacing: 1px;
     }
 
     .container {
-      margin-top: 50px;
+      max-width: 500px;
+      margin: 60px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
     }
 
     input {
+      width: 70%;
       padding: 12px;
-      width: 250px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
       font-size: 16px;
     }
 
     button {
-      padding: 12px 20px;
+      padding: 12px 18px;
+      margin-left: 10px;
+      border: none;
+      border-radius: 8px;
       background: #e63946;
       color: white;
-      border: none;
+      font-weight: bold;
       cursor: pointer;
-      margin-left: 10px;
+      transition: 0.3s;
     }
 
-    .result {
-      margin-top: 30px;
-      background: white;
-      padding: 20px;
-      display: inline-block;
-      border-radius: 10px;
+    button:hover {
+      background: #d62839;
     }
+
+    .card {
+      margin-top: 30px;
+      padding: 20px;
+      border-radius: 12px;
+      background: #f8f9fa;
+      text-align: left;
+    }
+
+    .status {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .progress {
+      height: 10px;
+      background: #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 15px 0;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #1a2a6c;
+      transition: width 0.5s ease;
+    }
+
+    .label {
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .error {
+      color: red;
+      margin-top: 20px;
+    }
+
   </style>
 </head>
 
@@ -57,11 +109,26 @@
 </header>
 
 <div class="container">
-  <h2>Entrez votre numéro de suivi</h2>
+  <h2>Suivre votre colis</h2>
+
   <input type="text" id="trackingInput" placeholder="PNL-XXXX">
   <button onclick="track()">Suivre</button>
 
-  <div id="result" class="result" style="display:none;"></div>
+  <div id="error" class="error"></div>
+
+  <div id="result" class="card" style="display:none;">
+    <div class="status" id="statusText"></div>
+
+    <div class="progress">
+      <div id="progressBar" class="progress-bar"></div>
+    </div>
+
+    <div class="label">Paiement:</div>
+    <div id="payment"></div>
+
+    <div class="label">Poids:</div>
+    <div id="weight"></div>
+  </div>
 </div>
 
 <script>
@@ -70,8 +137,24 @@
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4a2F6enFvY2R5eXdzaWFqbG13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMjAwMDcsImV4cCI6MjA5MTY5NjAwN30.WcafL-H4EZPYLpgKkwnlSLcDCZfsScdk2k5f9_oy7uQ"
   );
 
+  function getProgress(status) {
+    switch(status) {
+      case "Reçu": return 20;
+      case "En traitement": return 40;
+      case "Expédié": return 60;
+      case "Arrivé": return 80;
+      case "Livré": return 100;
+      default: return 10;
+    }
+  }
+
   async function track() {
     const trackingId = document.getElementById("trackingInput").value;
+    const errorDiv = document.getElementById("error");
+    const resultDiv = document.getElementById("result");
+
+    errorDiv.innerText = "";
+    resultDiv.style.display = "none";
 
     const { data, error } = await supabase
       .from("shipments")
@@ -79,20 +162,19 @@
       .eq("tracking_id", trackingId)
       .single();
 
-    const resultDiv = document.getElementById("result");
-
     if (error || !data) {
-      resultDiv.style.display = "block";
-      resultDiv.innerHTML = "❌ Numéro introuvable";
+      errorDiv.innerText = "Numéro de suivi introuvable.";
       return;
     }
 
+    document.getElementById("statusText").innerText = "Statut: " + data.status;
+    document.getElementById("payment").innerText = data.payment_status;
+    document.getElementById("weight").innerText = data.weight + " kg";
+
+    const progress = getProgress(data.status);
+    document.getElementById("progressBar").style.width = progress + "%";
+
     resultDiv.style.display = "block";
-    resultDiv.innerHTML = `
-      <h3>Statut: ${data.status}</h3>
-      <p>Paiement: ${data.payment_status}</p>
-      <p>Poids: ${data.weight} kg</p>
-    `;
   }
 </script>
 
