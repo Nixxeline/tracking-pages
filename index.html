@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Suivi de colis - Phoenixx Nest Logistics</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      text-align: center;
+      margin: 0;
+    }
+
+    header {
+      background: #1a2a6c;
+      color: white;
+      padding: 20px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .container {
+      margin-top: 50px;
+    }
+
+    input {
+      padding: 12px;
+      width: 250px;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 12px 20px;
+      background: #e63946;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+
+    .result {
+      margin-top: 30px;
+      background: white;
+      padding: 20px;
+      display: inline-block;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  Phoenixx Nest Logistics — Suivi de colis
+</header>
+
+<div class="container">
+  <h2>Entrez votre numéro de suivi</h2>
+  <input type="text" id="trackingInput" placeholder="PNL-XXXX">
+  <button onclick="track()">Suivre</button>
+
+  <div id="result" class="result" style="display:none;"></div>
+</div>
+
+<script>
+  const supabase = supabase.createClient(
+    "https://xxkazzqocdyywsiajlmw.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4a2F6enFvY2R5eXdzaWFqbG13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMjAwMDcsImV4cCI6MjA5MTY5NjAwN30.WcafL-H4EZPYLpgKkwnlSLcDCZfsScdk2k5f9_oy7uQ"
+  );
+
+  async function track() {
+    const trackingId = document.getElementById("trackingInput").value;
+
+    const { data, error } = await supabase
+      .from("shipments")
+      .select("*")
+      .eq("tracking_id", trackingId)
+      .single();
+
+    const resultDiv = document.getElementById("result");
+
+    if (error || !data) {
+      resultDiv.style.display = "block";
+      resultDiv.innerHTML = "❌ Numéro introuvable";
+      return;
+    }
+
+    resultDiv.style.display = "block";
+    resultDiv.innerHTML = `
+      <h3>Statut: ${data.status}</h3>
+      <p>Paiement: ${data.payment_status}</p>
+      <p>Poids: ${data.weight} kg</p>
+    `;
+  }
+</script>
+
+</body>
+</html>
