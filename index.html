@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Suivi de colis - Phoenixx Nest Logistics</title>
+  <title>Phoenixx Nest Logistics - Tracking</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
   <style>
@@ -19,7 +19,20 @@
       color: white;
       font-size: 22px;
       font-weight: bold;
-      letter-spacing: 1px;
+    }
+
+    .lang-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+
+    .lang-toggle button {
+      margin-left: 5px;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
     }
 
     .container {
@@ -32,32 +45,21 @@
       text-align: center;
     }
 
-    h2 {
-      margin-bottom: 20px;
-    }
-
     input {
       width: 70%;
       padding: 12px;
       border-radius: 8px;
       border: 1px solid #ddd;
-      font-size: 16px;
     }
 
-    button {
-      padding: 12px 18px;
+    button.track {
+      padding: 12px;
       margin-left: 10px;
       border: none;
       border-radius: 8px;
       background: #e63946;
       color: white;
-      font-weight: bold;
       cursor: pointer;
-      transition: 0.3s;
-    }
-
-    button:hover {
-      background: #d62839;
     }
 
     .card {
@@ -66,12 +68,6 @@
       border-radius: 12px;
       background: #f8f9fa;
       text-align: left;
-    }
-
-    .status {
-      font-size: 20px;
-      font-weight: bold;
-      margin-bottom: 10px;
     }
 
     .progress {
@@ -86,48 +82,44 @@
       height: 100%;
       width: 0%;
       background: #1a2a6c;
-      transition: width 0.5s ease;
-    }
-
-    .label {
-      font-weight: bold;
-      margin-top: 10px;
+      transition: width 0.5s;
     }
 
     .error {
       color: red;
-      margin-top: 20px;
+      margin-top: 15px;
     }
-
   </style>
 </head>
 
 <body>
 
-<header>
+<div class="lang-toggle">
+  <button onclick="setLang('fr')">FR</button>
+  <button onclick="setLang('en')">EN</button>
+</div>
+
+<header id="title">
   Phoenixx Nest Logistics — Suivi de colis
 </header>
 
 <div class="container">
-  <h2>Suivre votre colis</h2>
+  <h2 id="subtitle">Suivre votre colis</h2>
 
   <input type="text" id="trackingInput" placeholder="PNL-XXXX">
-  <button onclick="track()">Suivre</button>
+  <button class="track" onclick="track()" id="trackBtn">Suivre</button>
 
   <div id="error" class="error"></div>
 
   <div id="result" class="card" style="display:none;">
-    <div class="status" id="statusText"></div>
+    <h3 id="statusText"></h3>
 
     <div class="progress">
       <div id="progressBar" class="progress-bar"></div>
     </div>
 
-    <div class="label">Paiement:</div>
-    <div id="payment"></div>
-
-    <div class="label">Poids:</div>
-    <div id="weight"></div>
+    <p><strong id="paymentLabel">Paiement:</strong> <span id="payment"></span></p>
+    <p><strong id="weightLabel">Poids:</strong> <span id="weight"></span></p>
   </div>
 </div>
 
@@ -136,6 +128,27 @@
     "https://xxkazzqocdyywsiajlmw.supabase.co",
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4a2F6enFvY2R5eXdzaWFqbG13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMjAwMDcsImV4cCI6MjA5MTY5NjAwN30.WcafL-H4EZPYLpgKkwnlSLcDCZfsScdk2k5f9_oy7uQ"
   );
+
+  let lang = "fr";
+
+  function setLang(selected) {
+    lang = selected;
+
+    document.getElementById("title").innerText =
+      lang === "fr" ? "Phoenixx Nest Logistics — Suivi de colis" : "Phoenixx Nest Logistics — Package Tracking";
+
+    document.getElementById("subtitle").innerText =
+      lang === "fr" ? "Suivre votre colis" : "Track your package";
+
+    document.getElementById("trackBtn").innerText =
+      lang === "fr" ? "Suivre" : "Track";
+
+    document.getElementById("paymentLabel").innerText =
+      lang === "fr" ? "Paiement:" : "Payment:";
+
+    document.getElementById("weightLabel").innerText =
+      lang === "fr" ? "Poids:" : "Weight:";
+  }
 
   function getProgress(status) {
     switch(status) {
@@ -148,8 +161,8 @@
     }
   }
 
-  async function track() {
-    const trackingId = document.getElementById("trackingInput").value;
+  async function track(id = null) {
+    const trackingId = id || document.getElementById("trackingInput").value;
     const errorDiv = document.getElementById("error");
     const resultDiv = document.getElementById("result");
 
@@ -163,18 +176,31 @@
       .single();
 
     if (error || !data) {
-      errorDiv.innerText = "Numéro de suivi introuvable.";
+      errorDiv.innerText = lang === "fr"
+        ? "Numéro introuvable"
+        : "Tracking number not found";
       return;
     }
 
-    document.getElementById("statusText").innerText = "Statut: " + data.status;
+    document.getElementById("statusText").innerText =
+      (lang === "fr" ? "Statut: " : "Status: ") + data.status;
+
     document.getElementById("payment").innerText = data.payment_status;
     document.getElementById("weight").innerText = data.weight + " kg";
 
-    const progress = getProgress(data.status);
-    document.getElementById("progressBar").style.width = progress + "%";
+    document.getElementById("progressBar").style.width =
+      getProgress(data.status) + "%";
 
     resultDiv.style.display = "block";
+  }
+
+  // 🔥 AUTO LOAD FROM LINK
+  const params = new URLSearchParams(window.location.search);
+  const trackingFromURL = params.get("id");
+
+  if (trackingFromURL) {
+    document.getElementById("trackingInput").value = trackingFromURL;
+    track(trackingFromURL);
   }
 </script>
 
